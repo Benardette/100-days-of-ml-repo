@@ -1,1 +1,83 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+# ==========================================
+# DATA ANALYSIS: PALMER PENGUINS
+# ==========================================
+
+# 1. LOAD DATASET
+url = "https://raw.githubusercontent.com/allisonhorst/palmerpenguins/main/inst/extdata/penguins.csv"
+
+penguins = pd.read_csv(url)
+
+print("\n===== DATASET OVERVIEW =====")
+print(penguins.head())
+
+# 2. EXPLORE THE DATA
+print("\nDataset shape:", penguins.shape)
+print("\nColumn names:", penguins.columns.tolist())
+print("\nDataset information:")
+penguins.info()
+
+# 3. SERIES: SELECT ONE COLUMN
+body_mass = penguins["body_mass_g"]
+
+print("\n===== BODY MASS SERIES =====")
+print(body_mass.head())
+
+# 4. INDEXING: SELECT ROWS AND COLUMNS
+print("\n===== FIRST 10 PENGUINS =====")
+print(penguins.iloc[:10])
+
+print("\n===== SELECTED COLUMNS =====")
+print(penguins[["species", "island", "body_mass_g"]].head())
+
+# 5. FILTERING: FIND GENTOO PENGUINS
+gentoo = penguins[penguins["species"] == "Gentoo"]
+
+print("\n===== GENTOO PENGUINS =====")
+print(gentoo.head())
+
+# Find penguins weighing above 5000 grams
+heavy_penguins = penguins[penguins["body_mass_g"] > 5000]
+
+print("\n===== PENGUINS ABOVE 5000g =====")
+print(heavy_penguins.head())
+
+# 6. STATISTICAL ANALYSIS
+valid_mass = penguins["body_mass_g"].dropna()
+
+print("\n===== BODY MASS STATISTICS =====")
+print("Mean:", valid_mass.mean())
+print("Median:", valid_mass.median())
+print("Minimum:", valid_mass.min())
+print("Maximum:", valid_mass.max())
+print("Standard deviation:", valid_mass.std())
+
+# 7. SUBSET STATISTICS: GENTOO ONLY
+print("\n===== GENTOO BODY MASS STATISTICS =====")
+print(gentoo["body_mass_g"].describe())
+
+# 8. GROUPED STATISTICS BY SPECIES
+print("\n===== AVERAGE BODY MASS BY SPECIES =====")
+print(
+    penguins.groupby("species")["body_mass_g"]
+    .mean()
+    .round(2)
+)
+
+# 9. VISUALIZE THE RESULTS
+penguins.groupby("species")["body_mass_g"].mean().plot(
+    kind="bar",
+    title="Average Penguin Body Mass by Species",
+    ylabel="Body Mass (grams)",
+    xlabel="Species"
+)
+
+plt.tight_layout()
+plt.show()
+
+print("\n===== ANALYSIS COMPLETE =====")
 
