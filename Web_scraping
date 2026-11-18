@@ -1,1 +1,61 @@
+# Import libraries
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+import matplotlib.pyplot as plt
 
+# Define the URL of the website to scrape
+url = "https://www.scrapethissite.com/pages/forms/"
+
+# Fetch web page
+url = "https://www.scrapethissite.com/pages/forms/"
+
+# Send HTTP requests
+response = requests.get(url)
+
+print("Status Code:", response.status_code)
+
+# Parse the HTML content using BeautifulSoup
+soup = BeautifulSoup(response.text, 'html.parser')
+
+# Check the page title to confirm page loaded
+print("Page Title:", soup.title.text)
+
+
+# Locate the main data container in the HTML
+# On this page, each country's data is in a <div> with class "country"
+countries = soup.find_all('div', class_='country')
+print(f"Total countries found: {len(countries)}")  # Verify the number of elements found
+
+# Extract data for each country
+data = []  # Initialize an empty list to store data
+
+for country in countries:
+    # Extract the country name
+    name = country.find('h3', class_='country-name').text.strip()
+
+    # Extract the capital
+    capital = country.find('span', class_='country-capital').text.strip()
+
+    # Extract population
+    population = country.find('span', class_='country-population').text.strip()
+
+    # Extract area
+    area = country.find('span', class_='country-area').text.strip()
+
+    # Append the extracted data as a dictionary to our list
+    data.append({
+        'Country': name,
+        'Capital': capital,
+        'Population': population,
+        'Area': area})
+
+# Convert the list of dictionaries into a Pandas DataFrame
+df = pd.DataFrame(data)
+
+# Preview the first 5 rows to verify data extraction
+df.head()
+
+# Export the DataFrame to a CSV file
+df.to_csv('countries_data.csv', index=False)
+print("Data successfully exported to countries_data.csv")
