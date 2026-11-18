@@ -1,1 +1,73 @@
 
+import pandas as pd
+
+# 1. LOAD THE RAW DATASET
+df = pd.read_csv("Employee_dataset.csv")
+
+print("Original dataset shape:", df.shape)
+
+# 2. REMOVE DUPLICATES
+df = df.drop_duplicates()
+
+# 3. HANDLE MISSING VALUES
+# Fill numerical missing values with the median
+df["Age"] = pd.to_numeric(df["Age"], errors="coerce")
+df["Age"] = df["Age"].fillna(df["Age"].median())
+
+df["Salary"] = pd.to_numeric(df["Salary"], errors="coerce")
+df["Salary"] = df["Salary"].fillna(df["Salary"].median())
+
+# 4. CONVERT DATA TYPES
+# Convert Join_Date from text to datetime
+df["Join_Date"] = pd.to_datetime(
+    df["Join_Date"],
+    format="%m/%d/%Y",
+    errors="coerce"
+)
+
+# Convert text columns to string
+text_columns = [
+    "Employee_ID", "First_Name", "Last_Name",
+    "Department_Region", "Status", "Email",
+    "Performance_Score"
+]
+
+for column in text_columns:
+    df[column] = df[column].astype("string").str.strip()
+
+# Standardise email addresses
+df["Email"] = df["Email"].str.lower()
+
+# Convert Phone to string instead of integer
+df["Phone"] = df["Phone"].astype("string")
+
+# Flag invalid phone numbers without destroying original values
+df["Phone_Valid"] = df["Phone"].str.fullmatch(
+    r"\+?\d{7,15}"
+).fillna(False)
+
+# Convert categorical columns to category type
+category_columns = [
+    "Department_Region", "Status", "Performance_Score"
+]
+
+for column in category_columns:
+    df[column] = df[column].astype("category")
+
+# 5. CHECK FOR REMAINING MISSING VALUES
+print("\nMissing values after cleaning:")
+print(df.isnull().sum())
+
+# 6. CHECK DUPLICATES
+print("\nDuplicate rows remaining:", df.duplicated().sum())
+
+# 7. CHECK UPDATED DATA TYPES
+print("\nUpdated data types:")
+print(df.dtypes)
+
+# 8. SAVE CLEANED DATASET
+df.to_csv("Employee_dataset_cleaned.csv", index=False)
+
+print("\nCleaned dataset shape:", df.shape)
+print("Cleaning completed successfully!")
+
