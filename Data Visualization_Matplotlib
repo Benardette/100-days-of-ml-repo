@@ -1,7 +1,6 @@
 
 # ==============================================
 # HEALTHCARE DATA VISUALIZATION
-# BLUE COLOUR THEME
 # ==============================================
 
 import pandas as pd
