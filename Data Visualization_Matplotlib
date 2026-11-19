@@ -198,7 +198,7 @@ axes[1, 1].set_ylabel("Average Billing Amount")
 
 
 # ==============================================
-# 5. FINAL STYLING
+# 5. STYLING
 # ==============================================
 
 for ax in axes.flat:
