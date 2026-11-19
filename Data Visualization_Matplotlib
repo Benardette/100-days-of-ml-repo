@@ -1,1 +1,237 @@
 
+# ==============================================
+# HEALTHCARE DATA VISUALIZATION
+# BLUE COLOUR THEME
+# ==============================================
+
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Load dataset
+df = pd.read_csv("healthcare_dataset.csv")
+
+# Prepare data
+df["Date of Admission"] = pd.to_datetime(
+    df["Date of Admission"], errors="coerce"
+)
+
+df["Discharge Date"] = pd.to_datetime(
+    df["Discharge Date"], errors="coerce"
+)
+
+df["Age"] = pd.to_numeric(df["Age"], errors="coerce")
+df["Billing Amount"] = pd.to_numeric(
+    df["Billing Amount"], errors="coerce"
+)
+
+df["Stay Duration"] = (
+    df["Discharge Date"] - df["Date of Admission"]
+).dt.days
+
+df = df.dropna(
+    subset=["Date of Admission", "Age",
+            "Billing Amount", "Medical Condition",
+            "Admission Type"]
+)
+
+# BLUE COLOUR PALETTE
+blue_palette = [
+    "#0B1F3A",  # Dark navy
+    "#123F6B",  # Deep blue
+    "#1769AA",  # Royal blue
+    "#2685C5",  # Medium blue
+    "#62A9E5",  # Sky blue
+    "#A6D4F2"   # Light blue
+]
+
+# Figure styling
+plt.style.use("default")
+
+fig, axes = plt.subplots(2, 2, figsize=(16, 11))
+
+fig.patch.set_facecolor("#F0F6FC")
+
+fig.suptitle(
+    "HEALTHCARE DATA ANALYSIS",
+    fontsize=21,
+    fontweight="bold",
+    color="#0B1F3A"
+)
+
+# ==============================================
+# 1. LINE PLOT
+# Monthly Hospital Admissions
+# ==============================================
+
+monthly_admissions = (
+    df.set_index("Date of Admission")
+      .resample("ME")
+      .size()
+)
+
+axes[0, 0].plot(
+    monthly_admissions.index,
+    monthly_admissions.values,
+    color="#1769AA",
+    linewidth=2.8,
+    marker="o",
+    markersize=5,
+    markerfacecolor="#62A9E5",
+    markeredgecolor="#0B1F3A",
+    label="Monthly Admissions"
+)
+
+axes[0, 0].set_title(
+    "Monthly Hospital Admissions",
+    color="#0B1F3A",
+    fontsize=14,
+    fontweight="bold"
+)
+
+axes[0, 0].set_xlabel("Admission Date")
+axes[0, 0].set_ylabel("Number of Patients")
+axes[0, 0].legend()
+
+axes[0, 0].tick_params(axis="x", rotation=45)
+
+
+# ==============================================
+# 2. SCATTER PLOT
+# Patient Age vs Billing Amount
+# ==============================================
+
+sample = df.sample(
+    n=min(5000, len(df)),
+    random_state=42
+)
+
+axes[0, 1].scatter(
+    sample["Age"],
+    sample["Billing Amount"],
+    c="#2685C5",
+    alpha=0.55,
+    s=25,
+    edgecolors="none"
+)
+
+axes[0, 1].set_title(
+    "Patient Age vs Billing Amount",
+    color="#0B1F3A",
+    fontsize=14,
+    fontweight="bold"
+)
+
+axes[0, 1].set_xlabel("Patient Age")
+axes[0, 1].set_ylabel("Billing Amount")
+
+
+# ==============================================
+# 3. BAR CHART
+# Patients by Medical Condition
+# ==============================================
+
+condition_counts = (
+    df["Medical Condition"]
+    .value_counts()
+    .sort_values(ascending=False)
+)
+
+condition_colors = [
+    blue_palette[i % len(blue_palette)]
+    for i in range(len(condition_counts))
+]
+
+axes[1, 0].bar(
+    condition_counts.index,
+    condition_counts.values,
+    color=condition_colors,
+    edgecolor="white",
+    linewidth=1.2
+)
+
+axes[1, 0].set_title(
+    "Patients by Medical Condition",
+    color="#0B1F3A",
+    fontsize=14,
+    fontweight="bold"
+)
+
+axes[1, 0].set_xlabel("Medical Condition")
+axes[1, 0].set_ylabel("Number of Patients")
+
+axes[1, 0].tick_params(axis="x", rotation=30)
+
+
+# ==============================================
+# 4. BAR CHART
+# Average Billing by Admission Type
+# ==============================================
+
+average_billing = (
+    df.groupby("Admission Type")["Billing Amount"]
+    .mean()
+    .sort_values(ascending=False)
+)
+
+admission_colors = [
+    "#0B1F3A",
+    "#1769AA",
+    "#62A9E5"
+]
+
+axes[1, 1].bar(
+    average_billing.index,
+    average_billing.values,
+    color=admission_colors[:len(average_billing)],
+    edgecolor="white",
+    linewidth=1.2
+)
+
+axes[1, 1].set_title(
+    "Average Billing by Admission Type",
+    color="#0B1F3A",
+    fontsize=14,
+    fontweight="bold"
+)
+
+axes[1, 1].set_xlabel("Admission Type")
+axes[1, 1].set_ylabel("Average Billing Amount")
+
+
+# ==============================================
+# 5. FINAL STYLING
+# ==============================================
+
+for ax in axes.flat:
+
+    ax.set_facecolor("#FFFFFF")
+
+    ax.grid(
+        axis="y",
+        linestyle="--",
+        alpha=0.3,
+        color="#8CB9DD"
+    )
+
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    ax.spines["left"].set_color("#A6C8E5")
+    ax.spines["bottom"].set_color("#A6C8E5")
+
+    ax.tick_params(colors="#123F6B")
+
+plt.tight_layout(rect=[0, 0, 1, 0.95])
+
+# Save visualization
+plt.savefig(
+    "healthcare_analysis.png",
+    dpi=300,
+    bbox_inches="tight",
+    facecolor=fig.get_facecolor()
+)
+
+plt.show()
+
+print("healthcare visualization completed!")
+
