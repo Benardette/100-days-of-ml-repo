@@ -1,1 +1,170 @@
 
+# ============================================================
+# DAY: INTRODUCTION TO SCIKIT-LEARN
+# PROJECT: FIRST LINEAR REGRESSION MODEL
+# DATASET: DIABETES DATASET
+# ============================================================
+
+# 1. IMPORT LIBRARIES
+
+import pandas as pd
+import numpy as np
+
+from sklearn.datasets import load_diabetes
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import (
+    mean_absolute_error,
+    mean_squared_error,
+    r2_score
+)
+
+
+# 2. LOAD DATASET
+
+diabetes = load_diabetes()
+
+df = pd.DataFrame(
+    diabetes.data,
+    columns=diabetes.feature_names
+)
+
+df["disease_progression"] = diabetes.target
+
+print("\nFIRST FIVE ROWS")
+print(df.head())
+
+print("\nDATASET INFORMATION")
+print(df.info())
+
+print("\nMISSING VALUES")
+print(df.isnull().sum().sum())
+
+print("\nDATASET DIMENSIONS")
+print(df.shape)
+
+
+# 3. SEPARATE FEATURES AND TARGET
+
+X = df.drop("disease_progression", axis=1)
+y = df["disease_progression"]
+
+print("\nFEATURE SHAPE:", X.shape)
+print("TARGET SHAPE:", y.shape)
+
+
+# 4. SPLIT DATA INTO TRAINING AND TESTING SETS
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42
+)
+
+print("\nTRAINING DATA:", X_train.shape)
+print("TESTING DATA:", X_test.shape)
+
+
+# 5. SCALE THE FEATURES
+
+scaler = StandardScaler()
+
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+
+# 6. INITIALIZE LINEAR REGRESSION MODEL
+
+model = LinearRegression()
+
+
+# 7. TRAIN THE MODEL USING FIT()
+
+model.fit(X_train_scaled, y_train)
+
+print("\nMODEL TRAINING COMPLETED!")
+
+
+# 8. MAKE PREDICTIONS
+
+y_pred = model.predict(X_test_scaled)
+
+
+# 9. COMPARE ACTUAL AND PREDICTED VALUES
+
+results = pd.DataFrame({
+    "Actual": y_test.values,
+    "Predicted": np.round(y_pred, 2)
+})
+
+print("\nACTUAL VS PREDICTED VALUES")
+print(results.head(10))
+
+
+# 10. EVALUATE MODEL PERFORMANCE
+
+mae = mean_absolute_error(y_test, y_pred)
+
+mse = mean_squared_error(y_test, y_pred)
+
+rmse = np.sqrt(mse)
+
+r2 = r2_score(y_test, y_pred)
+
+print("\nMODEL PERFORMANCE")
+print("----------------------------")
+print("Mean Absolute Error:", round(mae, 2))
+print("Mean Squared Error:", round(mse, 2))
+print("Root Mean Squared Error:", round(rmse, 2))
+print("R2 Score:", round(r2, 3))
+
+
+# 11. INTERPRET FEATURE COEFFICIENTS
+
+coefficients = pd.DataFrame({
+    "Feature": X.columns,
+    "Coefficient": model.coef_
+})
+
+coefficients["Absolute_Impact"] = (
+    coefficients["Coefficient"].abs()
+)
+
+coefficients = coefficients.sort_values(
+    by="Absolute_Impact",
+    ascending=False
+)
+
+print("\nFEATURE IMPORTANCE BY COEFFICIENT MAGNITUDE")
+print(coefficients)
+
+
+# 12. MAKE A NEW PREDICTION
+
+# Example: use the first test observation
+new_patient = X_test.iloc[[0]]
+
+new_patient_scaled = scaler.transform(new_patient)
+
+prediction = model.predict(new_patient_scaled)
+
+print("\nNEW PREDICTION")
+print("Predicted disease progression:",
+      round(prediction[0], 2))
+
+
+# 13. FINAL MODEL SUMMARY
+
+print("\nFINAL SUMMARY")
+print("----------------------------")
+print("Algorithm: Linear Regression")
+print("Training observations:", len(X_train))
+print("Testing observations:", len(X_test))
+print("Number of features:", X.shape[1])
+print("Model R2 Score:", round(r2, 3))
+print("Model Score:", round(
+    model.score(X_test_scaled, y_test), 3
+))
+
