@@ -1,1 +1,53 @@
 
+import pandas as pd
+
+# 1. LOAD THE DATASET
+df = pd.read_csv("agriculture_dataset.csv")
+
+# 2. GROUP DATA BY CROP TYPE
+grouped = df.groupby("Crop_Type")
+
+# 3. CALCULATE SUMMARY STATISTICS
+summary = grouped.agg(
+    Number_of_Farms=("Farm_ID", "count"),
+    Average_Farm_Area=("Farm_Area(acres)", "mean"),
+    Total_Yield=("Yield(tons)", "sum"),
+    Average_Yield=("Yield(tons)", "mean"),
+    Maximum_Yield=("Yield(tons)", "max"),
+    Minimum_Yield=("Yield(tons)", "min"),
+    Average_Fertilizer=("Fertilizer_Used(tons)", "mean"),
+    Average_Water_Usage=("Water_Usage(cubic meters)", "mean")
+)
+
+print("SUMMARY STATISTICS PER CROP")
+print(summary.round(2))
+
+
+# 4. TRANSFORMATION
+# Calculate average yield for each crop
+df["Crop_Average_Yield"] = (
+    df.groupby("Crop_Type")["Yield(tons)"]
+    .transform("mean")
+)
+
+# Compare individual farm yield with crop average
+df["Yield_Difference"] = (
+    df["Yield(tons)"] - df["Crop_Average_Yield"]
+)
+
+print("\nFARM YIELD COMPARISON")
+print(df[[
+    "Farm_ID",
+    "Crop_Type",
+    "Yield(tons)",
+    "Crop_Average_Yield",
+    "Yield_Difference"
+]].round(2))
+
+# 5. SORT CATEGORIES BY AVERAGE YIELD
+print("\nCROPS RANKED BY AVERAGE YIELD")
+print(summary.sort_values(
+    by="Average_Yield",
+    ascending=False
+).round(2))
+
