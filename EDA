@@ -1,1 +1,147 @@
 
+# ============================================
+# EXPLORATORY DATA ANALYSIS (EDA)
+# Healthcare Dataset
+# ============================================
+
+# 1. IMPORT LIBRARIES
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# 2. LOAD DATASET
+df = pd.read_csv("healthcare_dataset.csv")
+
+# Set visual style
+sns.set_theme(style="whitegrid", palette="Blues")
+
+# 3. UNDERSTANDING THE DATA
+print("\n--- DATASET OVERVIEW ---")
+print(df.head())
+
+print("\n--- DATASET SHAPE ---")
+print("Rows and columns:", df.shape)
+
+print("\n--- DATA TYPES ---")
+print(df.info())
+
+print("\n--- STATISTICAL SUMMARY ---")
+print(df.describe(include="all"))
+
+# 4. DATA QUALITY CHECK
+print("\n--- MISSING VALUES ---")
+print(df.isnull().sum())
+
+print("\n--- DUPLICATES ---")
+print("Duplicate rows:", df.duplicated().sum())
+
+# 5. IDENTIFY NUMERICAL AND CATEGORICAL COLUMNS
+numerical_cols = df.select_dtypes(include=np.number).columns
+categorical_cols = df.select_dtypes(include="object").columns
+
+print("\nNumerical columns:", list(numerical_cols))
+print("\nCategorical columns:", list(categorical_cols))
+
+# 6. UNIVARIATE ANALYSIS
+# Explore individual variables
+
+# Age distribution
+if "Age" in df.columns:
+    plt.figure(figsize=(9, 5))
+    sns.histplot(df["Age"], bins=20, kde=True, color="steelblue")
+    plt.title("Distribution of Patient Ages")
+    plt.xlabel("Age")
+    plt.ylabel("Number of Patients")
+    plt.show()
+
+# Gender distribution
+if "Gender" in df.columns:
+    plt.figure(figsize=(7, 5))
+    sns.countplot(data=df, x="Gender", hue="Gender",
+                  palette="Blues", legend=False)
+    plt.title("Patient Distribution by Gender")
+    plt.show()
+
+# 7. BIVARIATE ANALYSIS
+# Explore relationships between variables
+
+# H1: Age and medical conditions
+if {"Age", "Medical Condition"}.issubset(df.columns):
+    plt.figure(figsize=(12, 6))
+    sns.boxplot(data=df, x="Medical Condition", y="Age",
+                hue="Medical Condition", palette="Blues",
+                legend=False)
+    plt.title("Age Distribution Across Medical Conditions")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+# H2: Gender and medical conditions
+if {"Gender", "Medical Condition"}.issubset(df.columns):
+    plt.figure(figsize=(12, 6))
+    sns.countplot(data=df, x="Medical Condition",
+                  hue="Gender", palette="Blues")
+    plt.title("Medical Conditions by Gender")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+# H3: Medical condition and length of stay
+if {"Medical Condition", "Length of Stay"}.issubset(df.columns):
+    plt.figure(figsize=(12, 6))
+    sns.boxplot(data=df, x="Medical Condition",
+                y="Length of Stay",
+                hue="Medical Condition",
+                palette="Blues", legend=False)
+    plt.title("Hospital Stay Duration by Medical Condition")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+# H4: Medical condition and billing amount
+if {"Medical Condition", "Billing Amount"}.issubset(df.columns):
+    plt.figure(figsize=(12, 6))
+    sns.barplot(data=df, x="Medical Condition",
+                y="Billing Amount",
+                hue="Medical Condition",
+                estimator="mean", errorbar=None,
+                palette="Blues", legend=False)
+    plt.title("Average Billing Amount by Medical Condition")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+# H5: Age and billing relationship
+if {"Age", "Billing Amount"}.issubset(df.columns):
+    plt.figure(figsize=(9, 5))
+    sns.scatterplot(data=df, x="Age", y="Billing Amount",
+                    alpha=0.5, color="steelblue")
+    plt.title("Relationship Between Age and Billing Amount")
+    plt.show()
+
+# 8. CORRELATION ANALYSIS
+if len(numerical_cols) > 1:
+    plt.figure(figsize=(10, 7))
+    sns.heatmap(df[numerical_cols].corr(),
+                annot=True, cmap="Blues",
+                fmt=".2f", linewidths=0.5)
+    plt.title("Correlation Between Numerical Variables")
+    plt.tight_layout()
+    plt.show()
+
+# 9. AUTOMATED PATTERN DISCOVERY
+print("\n--- TOP MEDICAL CONDITIONS ---")
+if "Medical Condition" in df.columns:
+    print(df["Medical Condition"].value_counts().head(10))
+
+print("\n--- AVERAGE AGE BY GENDER ---")
+if {"Age", "Gender"}.issubset(df.columns):
+    print(df.groupby("Gender")["Age"].mean())
+
+print("\n--- AVERAGE BILLING BY CONDITION ---")
+if {"Billing Amount", "Medical Condition"}.issubset(df.columns):
+    print(df.groupby("Medical Condition")["Billing Amount"].mean())
+
+print("\n--- EDA COMPLETED ---")
+
