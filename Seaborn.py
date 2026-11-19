@@ -1,154 +1,173 @@
-# ============================================
-# SEABORN DATA VISUALIZATION
-# Healthcare Dataset
-# Distribution Plots, Box Plots and Heatmaps
-# ============================================
 
-# 1. IMPORT LIBRARIES
+# ==============================================
+# HEALTHCARE DATASET: SEABORN HEATMAP & PAIR PLOT
+# Feature Correlation Analysis
+# ==============================================
+
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
+import matplotlib.pyplot as plt
 
-# 2. LOAD DATASET
+# 1. LOAD DATASET
 df = pd.read_csv("healthcare_dataset.csv")
 
-# 3. PREPARE DATA
-df["Date of Admission"] = pd.to_datetime(df["Date of Admission"])
-df["Discharge Date"] = pd.to_datetime(df["Discharge Date"])
+print("Dataset shape:", df.shape)
+print(df.head())
 
-# Calculate hospital stay duration in days
-df["Stay Duration"] = (
+
+# 2. DATA PREPARATION
+df["Date of Admission"] = pd.to_datetime(
+    df["Date of Admission"], errors="coerce"
+)
+
+df["Discharge Date"] = pd.to_datetime(
+    df["Discharge Date"], errors="coerce"
+)
+
+df["Billing Amount"] = pd.to_numeric(
+    df["Billing Amount"], errors="coerce"
+)
+
+# Create a new feature: Length of Stay
+df["Length of Stay"] = (
     df["Discharge Date"] - df["Date of Admission"]
 ).dt.days
 
-# Set Seaborn style and blue colour palette
-sns.set_theme(style="whitegrid")
-
-gender_palette = {
-    "Male": "#1769AA",
-    "Female": "#75B9E7"
-}
-
-# 4. CREATE VISUALIZATION DASHBOARD
-fig, axes = plt.subplots(2, 3, figsize=(20, 12))
-
-# --------------------------------------------
-# GRAPH 1: AGE DISTRIBUTION
-# --------------------------------------------
-sns.histplot(
-    data=df,
-    x="Age",
-    hue="Gender",
-    bins=20,
-    kde=True,
-    palette=gender_palette,
-    alpha=0.5,
-    ax=axes[0, 0]
+# Remove invalid observations
+df = df.dropna(
+    subset=[
+        "Age",
+        "Billing Amount",
+        "Length of Stay"
+    ]
 )
 
-axes[0, 0].set_title("Age Distribution by Gender")
-axes[0, 0].set_xlabel("Age")
-axes[0, 0].set_ylabel("Number of Patients")
+# Keep valid hospital stays
+df = df[df["Length of Stay"] >= 0]
 
-# --------------------------------------------
-# GRAPH 2: BILLING AMOUNT DISTRIBUTION
-# --------------------------------------------
-sns.histplot(
-    data=df,
-    x="Billing Amount",
-    bins=30,
-    color="#1769AA",
-    kde=True,
-    ax=axes[0, 1]
-)
 
-axes[0, 1].set_title("Distribution of Hospital Billing")
-axes[0, 1].set_xlabel("Billing Amount")
-axes[0, 1].set_ylabel("Frequency")
-
-# --------------------------------------------
-# GRAPH 3: BOX PLOT - BILLING BY GENDER
-# --------------------------------------------
-sns.boxplot(
-    data=df,
-    x="Gender",
-    y="Billing Amount",
-    hue="Gender",
-    palette=gender_palette,
-    legend=False,
-    ax=axes[0, 2]
-)
-
-axes[0, 2].set_title("Billing Amount by Gender")
-axes[0, 2].set_xlabel("Gender")
-axes[0, 2].set_ylabel("Billing Amount")
-
-# --------------------------------------------
-# GRAPH 4: BOX PLOT - AGE BY MEDICAL CONDITION
-# --------------------------------------------
-sns.boxplot(
-    data=df,
-    x="Medical Condition",
-    y="Age",
-    color="#2685C5",
-    ax=axes[1, 0]
-)
-
-axes[1, 0].set_title("Age Distribution by Medical Condition")
-axes[1, 0].set_xlabel("Medical Condition")
-axes[1, 0].set_ylabel("Age")
-axes[1, 0].tick_params(axis="x", rotation=45)
-
-# --------------------------------------------
-# GRAPH 5: CORRELATION HEATMAP
-# --------------------------------------------
-numeric_columns = [
-    "Age",
-    "Billing Amount",
-    "Stay Duration"
+# 3. SELECT NUMERICAL FEATURES
+features = df[
+    [
+        "Age",
+        "Billing Amount",
+        "Length of Stay"
+    ]
 ]
 
-correlation = df[numeric_columns].corr()
+# Calculate correlation matrix
+correlation_matrix = features.corr(method="pearson")
+
+print("\nCORRELATION MATRIX:")
+print(correlation_matrix)
+
+
+# ==============================================
+# 4. CORRELATION HEATMAP
+# ==============================================
+
+sns.set_theme(style="whitegrid")
+
+plt.figure(figsize=(10, 7))
 
 sns.heatmap(
-    correlation,
+    correlation_matrix,
     annot=True,
-    cmap="Blues",
+    cmap="coolwarm",
     fmt=".2f",
-    linewidths=0.5,
+    linewidths=1,
+    linecolor="white",
+    square=True,
     vmin=-1,
     vmax=1,
-    ax=axes[1, 1]
+    cbar_kws={
+        "label": "Correlation Coefficient"
+    }
 )
 
-axes[1, 1].set_title("Correlation Between Numerical Variables")
-
-# --------------------------------------------
-# GRAPH 6: MEDICAL CONDITIONS BY GENDER
-# --------------------------------------------
-condition_gender = pd.crosstab(
-    df["Medical Condition"],
-    df["Gender"]
+plt.title(
+    "Healthcare Features Correlation Heatmap",
+    fontsize=16,
+    fontweight="bold",
+    pad=20
 )
 
-sns.heatmap(
-    condition_gender,
-    annot=True,
-    fmt="d",
-    cmap="Blues",
-    linewidths=0.5,
-    ax=axes[1, 2]
+plt.xticks(rotation=30, ha="right")
+plt.yticks(rotation=0)
+
+plt.tight_layout()
+plt.savefig(
+    "healthcare_correlation_heatmap.png",
+    dpi=300,
+    bbox_inches="tight"
 )
 
-axes[1, 2].set_title("Medical Conditions by Gender")
-axes[1, 2].set_xlabel("Gender")
-axes[1, 2].set_ylabel("Medical Condition")
+plt.show()
 
-# --------------------------------------------
-# 5.DASHBOARD SETTINGS
-# --------------------------------------------
+
+# ==============================================
+# 5. PAIR PLOT
+# ==============================================
+
+# Sample records to make visualization faster
+sample_df = df.sample(
+    n=min(1500, len(df)),
+    random_state=42
+)
+
+sns.pairplot(
+    data=sample_df,
+    vars=[
+        "Age",
+        "Billing Amount",
+        "Length of Stay"
+    ],
+    hue="Admission Type",
+    palette="Set2",
+    diag_kind="hist",
+    plot_kws={
+        "alpha": 0.5,
+        "s": 25
+    },
+    diag_kws={
+        "bins": 20
+    }
+)
+
 plt.suptitle(
-    "HEALTHCARE DATA VISUALIZATION DASHBOARD",
+    "Healthcare Feature Relationships by Admission Type",
+    fontsize=16,
+    fontweight="bold",
+    y=1.02
+)
+
+plt.savefig(
+    "healthcare_pairplot.png",
+    dpi=300,
+    bbox_inches="tight"
+)
+
+plt.show()
+
+
+# ==============================================
+# 6. ANALYTICAL SUMMARY
+# ==============================================
+
+print("\n===== CORRELATION ANALYSIS =====")
+
+for col in correlation_matrix.columns:
+    for row in correlation_matrix.index:
+        if col != row:
+            if col < row:
+                value = correlation_matrix.loc[row, col]
+
+                print(
+                    f"{row} vs {col}: {value:.3f}"
+                )
+
+print("\nVisualization completed successfully!")
+
     fontsize=18,
     fontweight="bold"
 )
