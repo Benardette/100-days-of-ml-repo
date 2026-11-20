@@ -1,0 +1,212 @@
+
+# ============================================================
+# K-NEAREST NEIGHBORS (KNN) CLASSIFICATION
+# Distance Metrics, Optimal K, Curse of Dimensionality
+# Decision Boundary Visualization
+# ============================================================
+
+# 1. IMPORT LIBRARIES
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.decomposition import PCA
+
+# 2. LOAD DATASET
+iris = load_iris()
+
+X = iris.data
+y = iris.target
+
+print("Dataset shape:", X.shape)
+print("Features:", iris.feature_names)
+print("Classes:", iris.target_names)
+
+# 3. SPLIT DATA INTO TRAINING AND TESTING
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
+)
+
+# 4. FEATURE SCALING
+# KNN uses distances, so scaling is important.
+
+scaler = StandardScaler()
+
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# 5. FIND OPTIMAL K USING CROSS-VALIDATION
+k_values = range(1, 21)
+cv_scores = []
+
+for k in k_values:
+
+    knn = KNeighborsClassifier(
+        n_neighbors=k,
+        metric="minkowski",
+        p=2
+    )
+
+    scores = cross_val_score(
+        knn,
+        X_train_scaled,
+        y_train,
+        cv=5,
+        scoring="accuracy"
+    )
+
+    cv_scores.append(scores.mean())
+
+optimal_k = list(k_values)[np.argmax(cv_scores)]
+
+print("\nOptimal K:", optimal_k)
+print("Best CV Accuracy:", max(cv_scores))
+
+# Plot K selection
+plt.figure(figsize=(9, 5))
+plt.plot(k_values, cv_scores, marker='o')
+plt.axvline(optimal_k, linestyle='--', label=f'Optimal K = {optimal_k}')
+plt.xlabel("Number of Neighbors (K)")
+plt.ylabel("Cross-Validation Accuracy")
+plt.title("Selecting the Optimal K")
+plt.legend()
+plt.grid()
+plt.show()
+
+# 6. TRAIN FINAL KNN MODEL
+knn_model = KNeighborsClassifier(
+    n_neighbors=optimal_k,
+    metric="minkowski",
+    p=2
+)
+
+knn_model.fit(X_train_scaled, y_train)
+
+# 7. MAKE PREDICTIONS
+y_pred = knn_model.predict(X_test_scaled)
+
+# 8. MODEL EVALUATION
+accuracy = accuracy_score(y_test, y_pred)
+
+print("\nMODEL ACCURACY:", accuracy)
+print("\nCLASSIFICATION REPORT:")
+print(classification_report(y_test, y_pred, target_names=iris.target_names))
+
+print("\nCONFUSION MATRIX:")
+print(confusion_matrix(y_test, y_pred))
+
+# 9. COMPARE DIFFERENT DISTANCE METRICS
+metrics = ["euclidean", "manhattan", "chebyshev"]
+metric_results = {}
+
+for metric in metrics:
+
+    model = KNeighborsClassifier(
+        n_neighbors=optimal_k,
+        metric=metric
+    )
+
+    model.fit(X_train_scaled, y_train)
+
+    predictions = model.predict(X_test_scaled)
+
+    metric_results[metric] = accuracy_score(y_test, predictions)
+
+print("\nDISTANCE METRIC COMPARISON:")
+
+for metric, score in metric_results.items():
+    print(f"{metric}: {score:.4f}")
+
+# 10. CURSE OF DIMENSIONALITY
+# Compare distance behavior as the number of features increases.
+
+print("\nCURSE OF DIMENSIONALITY:")
+
+for n_features in range(1, X_train_scaled.shape[1] + 1):
+
+    subset = X_train_scaled[:, :n_features]
+
+    distances = np.linalg.norm(
+        subset[0] - subset[1:],
+        axis=1
+    )
+
+    print(
+        f"{n_features} features -> "
+        f"Mean distance: {distances.mean():.4f}"
+    )
+
+# 11. DECISION BOUNDARY VISUALIZATION
+# Use two features so the decision boundary can be plotted.
+
+X_2d = X[:, :2]
+
+X_train_2d, X_test_2d, y_train_2d, y_test_2d = train_test_split(
+    X_2d, y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
+)
+
+# Scale the two selected features
+scaler_2d = StandardScaler()
+
+X_train_2d_scaled = scaler_2d.fit_transform(X_train_2d)
+X_test_2d_scaled = scaler_2d.transform(X_test_2d)
+
+# Train 2D KNN
+knn_2d = KNeighborsClassifier(
+    n_neighbors=optimal_k,
+    metric="euclidean"
+)
+
+knn_2d.fit(X_train_2d_scaled, y_train_2d)
+
+# Create mesh grid
+x_min, x_max = X_train_2d_scaled[:, 0].min() - 1, X_train_2d_scaled[:, 0].max() + 1
+y_min, y_max = X_train_2d_scaled[:, 1].min() - 1, X_train_2d_scaled[:, 1].max() + 1
+
+xx, yy = np.meshgrid(
+    np.arange(x_min, x_max, 0.02),
+    np.arange(y_min, y_max, 0.02)
+)
+
+# Predict every point on the grid
+Z = knn_2d.predict(np.c_[xx.ravel(), yy.ravel()])
+Z = Z.reshape(xx.shape)
+
+# Plot decision boundaries
+plt.figure(figsize=(10, 7))
+
+plt.contourf(xx, yy, Z, alpha=0.3, cmap="viridis")
+
+plt.scatter(
+    X_train_2d_scaled[:, 0],
+    X_train_2d_scaled[:, 1],
+    c=y_train_2d,
+    edgecolors="black",
+    cmap="viridis"
+)
+
+plt.xlabel(iris.feature_names[0])
+plt.ylabel(iris.feature_names[1])
+plt.title(f"KNN Decision Boundaries (K={optimal_k})")
+plt.show()
+
+# 12. FINAL SUMMARY
+print("\nFINAL SUMMARY")
+print("--------------------------")
+print("Optimal K:", optimal_k)
+print("Test Accuracy:", round(accuracy, 4))
+print("Best Distance Metric:",
+      max(metric_results, key=metric_results.get))
+print("Best Metric Accuracy:",
+      round(max(metric_results.values()), 4))
