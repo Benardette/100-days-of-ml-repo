@@ -1,1 +1,130 @@
 
+# ============================================================
+# CLASSIFICATION MODEL EVALUATION
+# Accuracy, Precision, Recall, F1-Score & Confusion Matrix
+# ============================================================
+
+# 1. IMPORT LIBRARIES
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+
+# 2. LOAD DATASET
+data = load_breast_cancer()
+
+X = pd.DataFrame(data.data, columns=data.feature_names)
+y = data.target
+
+print("Dataset Shape:", X.shape)
+print("\nTarget Classes:", data.target_names)
+
+# 3. SPLIT DATA INTO TRAINING AND TESTING
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
+)
+
+# 4. SCALE FEATURES
+scaler = StandardScaler()
+
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# 5. TRAIN CLASSIFICATION MODEL
+model = LogisticRegression(max_iter=5000)
+
+model.fit(X_train, y_train)
+
+# 6. MAKE PREDICTIONS
+y_pred = model.predict(X_test)
+
+# 7. CALCULATE CONFUSION MATRIX MANUALLY
+# Rows = Actual values
+# Columns = Predicted values
+
+TN = np.sum((y_test == 0) & (y_pred == 0))
+FP = np.sum((y_test == 0) & (y_pred == 1))
+FN = np.sum((y_test == 1) & (y_pred == 0))
+TP = np.sum((y_test == 1) & (y_pred == 1))
+
+confusion_matrix = np.array([
+    [TN, FP],
+    [FN, TP]
+])
+
+print("\nCONFUSION MATRIX")
+print(confusion_matrix)
+
+# 8. CALCULATE EVALUATION METRICS MANUALLY
+
+# Accuracy
+accuracy = (TP + TN) / (TP + TN + FP + FN)
+
+# Precision
+precision = TP / (TP + FP) if (TP + FP) != 0 else 0
+
+# Recall
+recall = TP / (TP + FN) if (TP + FN) != 0 else 0
+
+# F1-Score
+f1_score = (
+    2 * (precision * recall) / (precision + recall)
+    if (precision + recall) != 0 else 0
+)
+
+# 9. DISPLAY RESULTS
+print("\nCLASSIFICATION EVALUATION METRICS")
+print("-----------------------------------")
+print(f"Accuracy:  {accuracy:.4f}")
+print(f"Precision: {precision:.4f}")
+print(f"Recall:    {recall:.4f}")
+print(f"F1-Score:  {f1_score:.4f}")
+
+# 10. PLOT CONFUSION MATRIX
+plt.figure(figsize=(8, 6))
+
+sns.heatmap(
+    confusion_matrix,
+    annot=True,
+    fmt="d",
+    cmap="Blues",
+    xticklabels=data.target_names,
+    yticklabels=data.target_names
+)
+
+plt.title("Confusion Matrix - Logistic Regression")
+plt.xlabel("Predicted Class")
+plt.ylabel("Actual Class")
+plt.tight_layout()
+plt.show()
+
+# 11. PLOT EVALUATION METRICS
+metrics = {
+    "Accuracy": accuracy,
+    "Precision": precision,
+    "Recall": recall,
+    "F1-Score": f1_score
+}
+
+plt.figure(figsize=(9, 5))
+
+plt.bar(metrics.keys(), metrics.values())
+
+plt.title("Classification Model Performance")
+plt.ylabel("Score")
+plt.ylim(0, 1.1)
+
+for i, value in enumerate(metrics.values()):
+    plt.text(i, value + 0.02, f"{value:.3f}", ha="center")
+
+plt.tight_layout()
+plt.show()
+
