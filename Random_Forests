@@ -1,0 +1,180 @@
+
+# ============================================================
+# DECISION TREE VS RANDOM FOREST
+# Topics: Ensembles, Bagging, Feature Randomness
+# ============================================================
+
+# 1. IMPORT LIBRARIES
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import time
+
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    confusion_matrix,
+    classification_report
+)
+
+# 2. LOAD DATASET
+data = load_breast_cancer()
+
+X = pd.DataFrame(data.data, columns=data.feature_names)
+y = data.target
+
+print("Dataset Shape:", X.shape)
+print("Target Classes:", data.target_names)
+
+# 3. SPLIT DATASET
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
+)
+
+# 4. BUILD SINGLE DECISION TREE
+tree_model = DecisionTreeClassifier(
+    criterion="gini",
+    max_depth=5,
+    random_state=42
+)
+
+start = time.time()
+tree_model.fit(X_train, y_train)
+tree_time = time.time() - start
+
+tree_predictions = tree_model.predict(X_test)
+
+# 5. BUILD RANDOM FOREST
+forest_model = RandomForestClassifier(
+    n_estimators=100,
+    criterion="gini",
+    max_depth=5,
+    max_features="sqrt",
+    bootstrap=True,
+    random_state=42,
+    n_jobs=-1
+)
+
+start = time.time()
+forest_model.fit(X_train, y_train)
+forest_time = time.time() - start
+
+forest_predictions = forest_model.predict(X_test)
+
+# 6. EVALUATE BOTH MODELS
+results = {
+    "Decision Tree": {
+        "Accuracy": accuracy_score(y_test, tree_predictions),
+        "Precision": precision_score(y_test, tree_predictions),
+        "Recall": recall_score(y_test, tree_predictions),
+        "F1 Score": f1_score(y_test, tree_predictions),
+        "Training Time": tree_time
+    },
+
+    "Random Forest": {
+        "Accuracy": accuracy_score(y_test, forest_predictions),
+        "Precision": precision_score(y_test, forest_predictions),
+        "Recall": recall_score(y_test, forest_predictions),
+        "F1 Score": f1_score(y_test, forest_predictions),
+        "Training Time": forest_time
+    }
+}
+
+results_df = pd.DataFrame(results).T
+
+print("\n========== MODEL PERFORMANCE ==========")
+print(results_df.round(4))
+
+# 7. CLASSIFICATION REPORTS
+print("\nDECISION TREE REPORT")
+print(classification_report(y_test, tree_predictions,
+                            target_names=data.target_names))
+
+print("\nRANDOM FOREST REPORT")
+print(classification_report(y_test, forest_predictions,
+                            target_names=data.target_names))
+
+# 8. VISUALIZE PERFORMANCE COMPARISON
+results_df.drop(columns="Training Time").plot(
+    kind="bar",
+    figsize=(10, 6)
+)
+
+plt.title("Decision Tree vs Random Forest Performance")
+plt.ylabel("Score")
+plt.ylim(0, 1.05)
+plt.xticks(rotation=0)
+plt.legend(loc="lower right")
+plt.grid(axis="y", alpha=0.3)
+plt.tight_layout()
+plt.show()
+
+# 9. PLOT CONFUSION MATRICES
+fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+models = [
+    ("Decision Tree", tree_predictions),
+    ("Random Forest", forest_predictions)
+]
+
+for ax, (name, predictions) in zip(axes, models):
+
+    cm = confusion_matrix(y_test, predictions)
+
+    sns.heatmap(
+        cm,
+        annot=True,
+        fmt="d",
+        cmap="Blues",
+        xticklabels=data.target_names,
+        yticklabels=data.target_names,
+        ax=ax
+    )
+
+    ax.set_title(name)
+    ax.set_xlabel("Predicted Label")
+    ax.set_ylabel("Actual Label")
+
+plt.tight_layout()
+plt.show()
+
+# 10. FEATURE IMPORTANCE
+importance = pd.Series(
+    forest_model.feature_importances_,
+    index=X.columns
+).sort_values(ascending=False)
+
+print("\nTOP 10 IMPORTANT FEATURES")
+print(importance.head(10))
+
+importance.head(10).sort_values().plot(
+    kind="barh",
+    figsize=(9, 5)
+)
+
+plt.title("Random Forest - Top 10 Feature Importances")
+plt.xlabel("Importance")
+plt.tight_layout()
+plt.show()
+
+# 11. FINAL COMPARISON
+print("\n========== FINAL CONCLUSION ==========")
+
+if results["Random Forest"]["Accuracy"] > results["Decision Tree"]["Accuracy"]:
+    print("Random Forest achieved higher accuracy.")
+elif results["Random Forest"]["Accuracy"] < results["Decision Tree"]["Accuracy"]:
+    print("Decision Tree achieved higher accuracy.")
+else:
+    print("Both models achieved equal accuracy.")
+
+print("Decision Tree Training Time:", round(tree_time, 4), "seconds")
+print("Random Forest Training Time:", round(forest_time, 4), "seconds")
